@@ -50,3 +50,15 @@ func Summary(results []Result) string {
 	}
 	return fmt.Sprintf("%d of %d variable(s) failed validation.", failed, total)
 }
+
+// FailedResults returns only the results that did not pass validation.
+// This is useful when callers want to act on or display only failures.
+func FailedResults(results []Result) []Result {
+	var failed []Result
+	for _, r := range results {
+		if !r.Passed {
+			failed = append(failed, r)
+		}
+	}
+	return failed
+}
