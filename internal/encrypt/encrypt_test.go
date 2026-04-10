@@ -70,3 +70,23 @@ func TestDecrypt_TruncatedData(t *testing.T) {
 		t.Errorf("unexpected error message: %v", err)
 	}
 }
+
+func TestEncryptDecrypt_EmptyPlaintext(t *testing.T) {
+	// Ensure that encrypting an empty string round-trips correctly.
+	plaintext := ""
+	passphrase := "somepassphrase"
+
+	encoded, err := Encrypt(plaintext, passphrase)
+	if err != nil {
+		t.Fatalf("Encrypt() error: %v", err)
+	}
+
+	decoded, err := Decrypt(encoded, passphrase)
+	if err != nil {
+		t.Fatalf("Decrypt() error: %v", err)
+	}
+
+	if decoded != plaintext {
+		t.Errorf("expected empty string, got %q", decoded)
+	}
+}
