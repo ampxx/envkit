@@ -22,12 +22,9 @@ func RunMerge(baseFile, otherFile, outFile, strategyStr string, auditLog *audit.
 		return fmt.Errorf("loading other config %q: %w", otherFile, err)
 	}
 
-	strategy := Strategy(strategyStr)
-	switch strategy {
-	case StrategyOurs, StrategyTheirs, StrategyPrompt:
-		// valid
-	default:
-		return fmt.Errorf("unknown merge strategy %q (choose: ours, theirs, prompt)", strategyStr)
+	strategy, err := parseStrategy(strategyStr)
+	if err != nil {
+		return err
 	}
 
 	result, err := Merge(base, other, strategy)
@@ -53,6 +50,17 @@ func RunMerge(baseFile, otherFile, outFile, strategyStr string, auditLog *audit.
 
 	fmt.Fprintf(os.Stdout, "✔ merged config written to %s\n", outFile)
 	return nil
+}
+
+// parseStrategy validates and converts a strategy string into a Strategy value.
+func parseStrategy(s string) (Strategy, error) {
+	strategy := Strategy(s)
+	switch strategy {
+	case StrategyOurs, StrategyTheirs, StrategyPrompt:
+		return strategy, nil
+	default:
+		return "", fmt.Errorf("unknown merge strategy %q (choose: ours, theirs, prompt)", s)
+	}
 }
 
 func resolveConflicts(conflicts []Conflict) (map[string]string, error) {
