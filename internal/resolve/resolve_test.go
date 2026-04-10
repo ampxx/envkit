@@ -79,6 +79,22 @@ func TestResolve_UnknownTargetErrors(t *testing.T) {
 	}
 }
 
+// TestResolve_GlobalVarsIncludedForTarget verifies that variables defined only
+// at the global level are still present when resolving with a named target.
+func TestResolve_GlobalVarsIncludedForTarget(t *testing.T) {
+	cfg := makeConfig()
+	results, err := resolve.Resolve(cfg, resolve.Options{Target: "production"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	m := resolve.ToMap(results)
+	// SECRET_KEY is only declared globally with no default; it should still
+	// appear in the resolved map (as an empty string).
+	if _, ok := m["SECRET_KEY"]; !ok {
+		t.Error("expected SECRET_KEY to be present in resolved map for production target")
+	}
+}
+
 func TestFormat_ShowSource(t *testing.T) {
 	cfg := makeConfig()
 	results, _ := resolve.Resolve(cfg, resolve.Options{})
