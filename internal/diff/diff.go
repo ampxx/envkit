@@ -6,83 +6,59 @@ import (
 	"strings"
 )
 
-// Result holds the comparison between two environment variable sets.
+// Result holds the diff outcome for a single key.
 type Result struct {
-	OnlyInA  []string
-	OnlyInB  []string
-	Differing []DiffEntry
-	Common   []string
+	Key     string
+	ValueA  string
+	ValueB  string
+	OnlyInA bool
+	OnlyInB bool
 }
 
-// DiffEntry represents a key whose value differs between two targets.
-type DiffEntry struct {
-	Key    string
-	ValueA string
-	ValueB string
-}
-
-// Compare compares two maps of environment variables and returns a Result.
-func Compare(a, b map[string]string) Result {
-	result := Result{}
-
-	seen := make(map[string]bool)
+// Compare returns a map of keys that differ between two env maps.
+func Compare(a, b map[string]string) map[string]Result {
+	out := make(map[string]Result)
 
 	for k, va := range a {
-		seen[k] = true
-		vb, ok := b[k]
-		if !ok {
-			result.OnlyInA = append(result.OnlyInA, k)
+		if vb, ok := b[k]; !ok {
+			out[k] = Result{Key: k, ValueA: va, OnlyInA: true}
 		} else if va != vb {
-			result.Differing = append(result.Differing, DiffEntry{Key: k, ValueA: va, ValueB: vb})
-		} else {
-			result.Common = append(result.Common, k)
+			out[k] = Result{Key: k, ValueA: va, ValueB: vb}
 		}
 	}
 
-	for k := range b {
-		if !seen[k] {
-			result.OnlyInB = append(result.OnlyInB, k)
+	for k, vb := range b {
+		if _, ok := a[k]; !ok {
+			out[k] = Result{Key: k, ValueB: vb, OnlyInB: true}
 		}
 	}
 
-	sort.Strings(result.OnlyInA)
-	sort.Strings(result.OnlyInB)
-	sort.Strings(result.Common)
-	sort.Slice(result.Differing, func(i, j int) bool {
-		return result.Differing[i].Key < result.Differing[j].Key
-	})
-
-	return result
+	return out
 }
 
-// Format returns a human-readable string of the diff result.
-func Format(r Result, labelA, labelB string) string {
+// Format returns a formatted string representation of the diff results.
+func Format(result map[string]Result) string {
+	if len(result) == 0 {
+		return "(no differences)"
+	}
+
+	keys := make([]string, 0, len(result))
+	for k := range result {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	var sb strings.Builder
-
-	if len(r.OnlyInA) > 0 {
-		fmt.Fprintf(&sb, "Only in %s:\n", labelA)
-		for _, k := range r.OnlyInA {
-			fmt.Fprintf(&sb, "  - %s\n", k)
+	for _, k := range keys {
+		r := result[k]
+		switch {
+		case r.OnlyInA:
+			fmt.Fprintf(&sb, "- %s=%q\n", k, r.ValueA)
+		case r.OnlyInB:
+			fmt.Fprintf(&sb, "+ %s=%q\n", k, r.ValueB)
+		default:
+			fmt.Fprintf(&sb, "~ %s: %q -> %q\n", k, r.ValueA, r.ValueB)
 		}
 	}
-
-	if len(r.OnlyInB) > 0 {
-		fmt.Fprintf(&sb, "Only in %s:\n", labelB)
-		for _, k := range r.OnlyInB {
-			fmt.Fprintf(&sb, "  + %s\n", k)
-		}
-	}
-
-	if len(r.Differing) > 0 {
-		fmt.Fprintf(&sb, "Differing values:\n")
-		for _, d := range r.Differing {
-			fmt.Fprintf(&sb, "  ~ %s\n    %s: %s\n    %s: %s\n", d.Key, labelA, d.ValueA, labelB, d.ValueB)
-		}
-	}
-
-	if sb.Len() == 0 {
-		return fmt.Sprintf("No differences between %s and %s.\n", labelA, labelB)
-	}
-
 	return sb.String()
 }
