@@ -3,6 +3,7 @@ package init
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -43,7 +44,7 @@ func TestScaffold_FileContainsTargets(t *testing.T) {
 	}
 	content := string(data)
 	for _, target := range []string{"development", "staging", "production"} {
-		if !contains(content, target) {
+		if !strings.Contains(content, target) {
 			t.Errorf("expected target %q in output", target)
 		}
 	}
@@ -82,20 +83,7 @@ func TestScaffold_WorkerTemplate(t *testing.T) {
 		t.Fatalf("Scaffold worker error: %v", err)
 	}
 	data, _ := os.ReadFile(filepath.Join(dir, "envkit.yaml"))
-	if !contains(string(data), "QUEUE_URL") {
+	if !strings.Contains(string(data), "QUEUE_URL") {
 		t.Error("expected QUEUE_URL in worker template output")
 	}
-}
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(s) > 0 && containsStr(s, sub))
-}
-
-func containsStr(s, sub string) bool {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
 }
