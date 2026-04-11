@@ -27,23 +27,11 @@ func RunRedact(configPath, envFile, targetName string) error {
 
 	// If a target is specified, restrict to keys declared in that target.
 	if targetName != "" {
-		found := false
-		for _, t := range cfg.Targets {
-			if t.Name == targetName {
-				found = true
-				filtered := make(map[string]string)
-				for _, v := range t.Vars {
-					if val, ok := vars[v.Key]; ok {
-						filtered[v.Key] = val
-					}
-				}
-				vars = filtered
-				break
-			}
+		filtered, err := filterByTarget(cfg, vars, targetName)
+		if err != nil {
+			return err
 		}
-		if !found {
-			return fmt.Errorf("target %q not found in config", targetName)
-		}
+		vars = filtered
 	}
 
 	results := Apply(vars, nil)
@@ -62,4 +50,22 @@ func RunRedact(configPath, envFile, targetName string) error {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", r.Key, r.Value, redactedMark)
 	}
 	return w.Flush()
+}
+
+// filterByTarget returns a subset of vars containing only keys declared in the
+// named target. It returns an error if the target is not found in the config.
+func filterByTarget(cfg *config.Config, vars map[string]string, targetName string) (map[string]string, error) {
+	for _, t := range cfg.Targets {
+		if t.Name != targetName {
+			continue
+		}
+		filtered := make(map[string]string, len(t.Vars))
+		for _, v := range t.Vars {
+			if val, ok := vars[v.Key]; ok {
+				filtered[v.Key] = val
+			}
+		}
+		return filtered, nil
+	}
+	return nil, fmt.Errorf("target %q not found in config", targetName)
 }
