@@ -66,3 +66,17 @@ func List(target, dir string) ([]string, error) {
 	}
 	return matches, nil
 }
+
+// Latest returns the most recent snapshot for a given target in the directory,
+// or nil if no snapshots exist. Because snapshot filenames embed a sortable
+// timestamp, the lexicographically last entry is also the most recent.
+func Latest(target, dir string) (*Snapshot, error) {
+	matches, err := List(target, dir)
+	if err != nil {
+		return nil, err
+	}
+	if len(matches) == 0 {
+		return nil, nil
+	}
+	return Load(matches[len(matches)-1])
+}
