@@ -24,6 +24,10 @@ type Options struct {
 
 // Apply flattens all resolved variables for a target into a single key=value
 // map, optionally adding a prefix and filtering by key set.
+//
+// Variables are first collected from the global scope, then overridden by any
+// matching variables defined in the specified target. Results are returned in
+// stable alphabetical order by key.
 func Apply(cfg *config.Document, opts Options) ([]Result, error) {
 	sep := opts.Separator
 	if sep == "" {
@@ -68,6 +72,17 @@ func Apply(cfg *config.Document, opts Options) ([]Result, error) {
 	// Stable sort by key.
 	sortResults(out)
 	return out, nil
+}
+
+// ToMap converts a slice of Results into a plain string map keyed by Result.Key.
+// This is useful when callers need a simple lookup table rather than ordered
+// slice access.
+func ToMap(results []Result) map[string]string {
+	m := make(map[string]string, len(results))
+	for _, r := range results {
+		m[r.Key] = r.Value
+	}
+	return m
 }
 
 func findTarget(cfg *config.Document, name string) *config.Target {
