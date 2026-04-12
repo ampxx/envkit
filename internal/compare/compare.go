@@ -9,12 +9,12 @@ import (
 
 // TargetDiff holds the result of comparing two deployment targets.
 type TargetDiff struct {
-	TargetA    string
-	TargetB    string
-	OnlyInA    []string
-	OnlyInB    []string
-	Differing  []KeyDiff
-	Common     []string
+	TargetA   string
+	TargetB   string
+	OnlyInA   []string
+	OnlyInB   []string
+	Differing []KeyDiff
+	Common    []string
 }
 
 // KeyDiff represents a key whose value differs between two targets.
@@ -67,6 +67,12 @@ func Targets(cfg *config.Config, targetA, targetB string) (*TargetDiff, error) {
 	})
 
 	return result, nil
+}
+
+// HasDifferences returns true if the diff contains any keys that are exclusive
+// to one target or have differing values between the two targets.
+func (d *TargetDiff) HasDifferences() bool {
+	return len(d.OnlyInA) > 0 || len(d.OnlyInB) > 0 || len(d.Differing) > 0
 }
 
 func varsForTarget(cfg *config.Config, name string) (map[string]string, error) {
