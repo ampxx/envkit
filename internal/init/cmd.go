@@ -31,17 +31,17 @@ func RunInit(args []string) error {
 		case "--force", "-f":
 			opts.Force = true
 		case "--list":
-			fmt.Println("Available templates:")
-			for _, name := range ListTemplates() {
-				tmpl := builtinTemplates[name]
-				fmt.Printf("  %-12s %s\n", name, tmpl.Description)
-			}
+			printTemplateList()
 			return nil
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				return fmt.Errorf("unknown flag: %s", args[i])
 			}
 		}
+	}
+
+	if _, ok := builtinTemplates[opts.Template]; !ok {
+		return fmt.Errorf("unknown template %q; run with --list to see available templates", opts.Template)
 	}
 
 	if err := Scaffold(opts); err != nil {
@@ -52,4 +52,13 @@ func RunInit(args []string) error {
 	tmpl := builtinTemplates[opts.Template]
 	PrintReport(opts, tmpl)
 	return nil
+}
+
+// printTemplateList prints all available built-in templates with their descriptions.
+func printTemplateList() {
+	fmt.Println("Available templates:")
+	for _, name := range ListTemplates() {
+		tmpl := builtinTemplates[name]
+		fmt.Printf("  %-12s %s\n", name, tmpl.Description)
+	}
 }
