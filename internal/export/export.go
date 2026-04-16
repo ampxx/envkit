@@ -42,7 +42,7 @@ func Export(cfg *config.Config, env map[string]string, opts Options) error {
 	case FormatJSON:
 		writeJSON(&sb, target, env)
 	default:
-		return fmt.Errorf("export: unknown format %q", opts.Format)
+		return fmt.Errorf("export: unknown format %q (valid formats: dotenv, shell, json)", opts.Format)
 	}
 
 	if opts.OutFile == "" {
@@ -50,7 +50,10 @@ func Export(cfg *config.Config, env map[string]string, opts Options) error {
 		return nil
 	}
 
-	return os.WriteFile(opts.OutFile, []byte(sb.String()), 0o644)
+	if err := os.WriteFile(opts.OutFile, []byte(sb.String()), 0o644); err != nil {
+		return fmt.Errorf("export: writing to file %q: %w", opts.OutFile, err)
+	}
+	return nil
 }
 
 func sortedKeys(target *config.Target, env map[string]string) []string {
