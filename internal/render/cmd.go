@@ -12,20 +12,22 @@ import (
 // Usage:
 //
 //	envkit render <target> --template <file> [--out <file>]
+//
+// If --out is omitted, the rendered output is written to stdout.
+// If --template is omitted, an error is returned.
 func RunRender(configPath, targetName, templatePath, outPath string) error {
+	if templatePath == "" {
+		return fmt.Errorf("--template is required")
+	}
+
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	var result *Result
-	if templatePath != "" {
-		result, err = RenderFile(cfg, targetName, templatePath)
-	} else {
-		return fmt.Errorf("--template is required")
-	}
+	result, err := RenderFile(cfg, targetName, templatePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("render %q: %w", targetName, err)
 	}
 
 	if outPath != "" {
